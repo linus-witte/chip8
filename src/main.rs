@@ -1,3 +1,6 @@
+mod chip8;
+
 fn main() {
-    println!("Hello, world!");
+    let chip = chip8::Chip::new();
+    println!("{:#?}", chip);
 }
