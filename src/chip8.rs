@@ -157,6 +157,33 @@ impl Chip {
             // 0xDXYN: Draws a sprite at coordinates (VX, VY) with height N pixels.
             0xD000 => self.draw(&opcode),
 
+            0xF000 => match opcode & 0x00FF {
+                // 0xFX1E: Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
+                0x001E => {
+                    self.i = self.i.wrapping_add(self.v[x] as u16);
+                }
+                // 0xFX33: Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
+                0x0033 => {
+                    self.ram[self.i as usize] = self.v[x] / 100;
+                    self.ram[self.i as usize + 1] = (self.v[x] % 100) / 10;
+                    self.ram[self.i as usize + 2] = self.v[x] % 10;
+                }
+                // 0xFX55: Stores from V0 to VX (including VX) in memory, starting at address I.
+                0x0055 => {
+                    for i in 0..=x {
+                        self.ram[self.i as usize + i] = self.v[i];
+                    }
+                    self.i = self.i + x as u16 + 1;
+                }
+                // 0xFX65: Fills from V0 to VX (including VX) with values from memory, starting at address I.
+                0x0065 => {
+                    for i in 0..=x {
+                        self.v[i] = self.ram[self.i as usize + i];
+                    }
+                    self.i = self.i + x as u16 + 1;
+                }
+                _ => panic!("unrecognized opcode: {:04x}", opcode),
+            },
             _ => panic!("unrecognized opcode: {:04x}", opcode),
         }
     }
