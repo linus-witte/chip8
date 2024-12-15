@@ -50,8 +50,6 @@ impl Chip {
 
     /// Emulates a single cycle of the Chip-8 interpreter by fetching, decoding, and executing an opcode.
     pub fn emulate_cycle(&mut self) {
-        self.v[0xF] = 0;
-
         let opcode = self.fetch_opcode();
 
         let x = ((opcode & 0x0F00) >> 8) as usize;
@@ -100,7 +98,48 @@ impl Chip {
             }
 
             // 0x6XNN: Sets register VX to the value NN.
-            0x6000 => self.v[((opcode & 0x0F00) >> 8) as usize] = (opcode & 0x00FF) as u8,
+            0x6000 => self.v[x] = nn,
+
+            // 0x7XNN: Adds NN to VX.
+            0x7000 => self.v[x] = self.v[x].wrapping_add(nn),
+
+            // 0x8XYN: bit and math operations
+            0x8000 => match opcode & 0x000F {
+                0x0 => self.v[x] = self.v[y],
+                0x1 => self.v[x] |= self.v[y],
+                0x2 => self.v[x] &= self.v[y],
+                0x3 => self.v[x] ^= self.v[y],
+                0x4 => {
+                    let cf = if (self.v[x] as u16) + (self.v[y] as u16) > 0xFF {
+                        1
+                    } else {
+                        0
+                    };
+                    self.v[x] = self.v[x].wrapping_add(self.v[y]);
+                    self.v[0xF] = cf;
+                }
+                0x5 => {
+                    let cf = if self.v[y] > self.v[x] { 0 } else { 1 };
+                    self.v[x] = self.v[x].wrapping_sub(self.v[y]);
+                    self.v[0xF] = cf;
+                }
+                0x6 => {
+                    let lsb = self.v[y] & 0x1;
+                    self.v[x] = self.v[y] >> 1;
+                    self.v[0xF] = lsb;
+                }
+                0x7 => {
+                    let cf = if self.v[x] > self.v[y] { 0 } else { 1 };
+                    self.v[x] = self.v[y].wrapping_sub(self.v[x]);
+                    self.v[0xF] = cf;
+                }
+                0xE => {
+                    let msb = (self.v[y] & 0x80) >> 7;
+                    self.v[x] = self.v[y] << 1;
+                    self.v[0xF] = msb;
+                }
+                _ => panic!("unrecognized opcode: {:04x}", opcode),
+            },
 
             // 0x9XYN: Skips the next instruction if VX does not equal VY.
             0x9000 => {
