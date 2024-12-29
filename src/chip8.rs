@@ -17,6 +17,8 @@ pub struct Chip {
     /// index register
     i: u16,
 
+    delay_timer: u8,
+
     /// graphics buffer
     pub gfx: [bool; GFX_SIZE],
 }
@@ -30,6 +32,7 @@ impl Chip {
             pc: 0x200,
             sp: 0,
             i: 0,
+            delay_timer: 0,
             gfx: [false; GFX_SIZE],
         }
     }
@@ -158,6 +161,10 @@ impl Chip {
             0xD000 => self.draw(&opcode),
 
             0xF000 => match opcode & 0x00FF {
+                0x0007 => self.v[x] = self.delay_timer,
+
+                0x0015 => self.delay_timer = self.v[x],
+
                 // 0xFX1E: Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
                 0x001E => {
                     self.i = self.i.wrapping_add(self.v[x] as u16);
@@ -185,6 +192,10 @@ impl Chip {
                 _ => panic!("unrecognized opcode: {:04x}", opcode),
             },
             _ => panic!("unrecognized opcode: {:04x}", opcode),
+        }
+
+        if self.delay_timer > 0 {
+            self.delay_timer = self.delay_timer - 1;
         }
     }
 
