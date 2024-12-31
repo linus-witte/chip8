@@ -54,25 +54,71 @@ impl Chip {
 
         let opcode = self.fetch_opcode();
 
-        if opcode == 0x00E0 {
-            self.gfx = [false; GFX_SIZE]; // Clear display
-            return;
-        }
+        let x = ((opcode & 0x0F00) >> 8) as usize;
+        let y = ((opcode & 0x00F0) >> 4) as usize;
+        let nn = (opcode & 0x00FF) as u8;
 
         match opcode & 0xF000 {
+            0x0000 => match opcode & 0x0FFF {
+                0x0E0 => self.gfx = [false; GFX_SIZE],
+                0x0EE => {
+                    self.sp -= 1;
+                    self.pc = self.stack[self.sp as usize];
+                }
+                _ => panic!("unrecognized opcode: {:04x}", opcode),
+            },
+
             // 0x1NNN: Sets the program counter to address NNN (jump instruction).
             0x1000 => self.pc = opcode & 0x0FFF,
+
+            // 0x2NNN: Calls subroutine at NNN
+            0x2000 => {
+                self.stack[self.sp as usize] = self.pc;
+                self.sp += 1;
+                self.pc = opcode & 0x0FFF
+            }
+
+            // 0x3XNN: Skips the next instruction if VX equals NN.
+            0x3000 => {
+                if self.v[x] == nn {
+                    self.pc += 2
+                }
+            }
+
+            // 0x4XNN: Skips the next instruction if VX does not equal NN.
+            0x4000 => {
+                if self.v[x] != nn {
+                    self.pc += 2
+                }
+            }
+
+            // 0x5XNN: Skips the next instruction if VX equals VY .
+            0x5000 => {
+                if self.v[x] == self.v[y] {
+                    self.pc += 2
+                }
+            }
 
             // 0x6XNN: Sets register VX to the value NN.
             0x6000 => self.v[((opcode & 0x0F00) >> 8) as usize] = (opcode & 0x00FF) as u8,
 
+            // 0x9XYN: Skips the next instruction if VX does not equal VY.
+            0x9000 => {
+                if self.v[x] != self.v[y] {
+                    self.pc += 2
+                }
+            }
+
             // 0xANNN: Sets the index register (I) to address NNN.
             0xA000 => self.i = opcode & 0x0FFF,
+
+            // 0xBNNN: Jumps to the address NNN plus V0.
+            0xB000 => self.pc = (opcode & 0x0FFF) + self.v[0] as u16,
 
             // 0xDXYN: Draws a sprite at coordinates (VX, VY) with height N pixels.
             0xD000 => self.draw(&opcode),
 
-            _ => println!("\tunrecognized opcode: {:04x}", opcode),
+            _ => panic!("unrecognized opcode: {:04x}", opcode),
         }
     }
 
