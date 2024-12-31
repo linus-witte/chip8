@@ -2,6 +2,8 @@ mod chip8;
 use chip8::Chip;
 mod display;
 use display::Display;
+mod keypad;
+use keypad::Keypad;
 
 use std::fs::File;
 use std::io::Read;
@@ -19,6 +21,7 @@ fn main() -> Result<(), String> {
 
     let sdl_context = sdl2::init().unwrap();
     let mut display = Display::init(&sdl_context)?;
+    let mut keypad = Keypad::new(&sdl_context)?;
 
     ctrlc::set_handler(move || {
         println!("Received termination signal. Shutting down gracefully...");
@@ -31,7 +34,8 @@ fn main() -> Result<(), String> {
 
     chip.load_rom(rom);
 
-    loop {
+    while let Ok(keys) = keypad.poll() {
+        chip.key = keys;
         chip.emulate_cycle();
 
         if chip.draw_flag() {
@@ -40,4 +44,5 @@ fn main() -> Result<(), String> {
 
         std::thread::sleep(std::time::Duration::from_millis(2));
     }
+    Ok(())
 }

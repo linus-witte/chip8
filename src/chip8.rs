@@ -38,6 +38,8 @@ pub struct Chip {
 
     delay_timer: u8,
 
+    pub key: [bool; 16],
+
     /// graphics buffer
     pub gfx: [bool; GFX_SIZE],
 }
@@ -52,6 +54,7 @@ impl Chip {
             sp: 0,
             i: 0,
             delay_timer: 0,
+            key: [false; 16],
             gfx: [false; GFX_SIZE],
         };
         for i in 0..80 {
@@ -182,6 +185,22 @@ impl Chip {
 
             // 0xDXYN: Draws a sprite at coordinates (VX, VY) with height N pixels.
             0xD000 => self.draw(&opcode),
+
+            0xE000 => match opcode & 0x00FF {
+                // 0xEX9E: Skips the next instruction if the key stored in VX is pressed
+                0x009E => {
+                    if self.key[self.v[x] as usize] {
+                        self.pc += 2;
+                    }
+                }
+                // 0xEXA1: Skips the next instruction if the key stored in VX is not pressed
+                0x00A1 => {
+                    if !self.key[self.v[x] as usize] {
+                        self.pc += 2;
+                    }
+                }
+                _ => panic!("unrecognized opcode: {:04x}", opcode),
+            },
 
             0xF000 => match opcode & 0x00FF {
                 0x0007 => self.v[x] = self.delay_timer,
