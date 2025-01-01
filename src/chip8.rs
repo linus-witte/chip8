@@ -38,6 +38,9 @@ pub struct Chip {
 
     delay_timer: u8,
 
+    /// only used in 0xFX0A
+    key_pressed: bool,
+
     pub key: [bool; 16],
 
     /// graphics buffer
@@ -55,6 +58,7 @@ impl Chip {
             i: 0,
             delay_timer: 0,
             key: [false; 16],
+            key_pressed: false,
             gfx: [false; GFX_SIZE],
         };
         for i in 0..80 {
@@ -206,6 +210,27 @@ impl Chip {
                 0x0007 => self.v[x] = self.delay_timer,
 
                 0x0015 => self.delay_timer = self.v[x],
+
+                // 0xFX0A: A key press is awaited, and then stored in VX (blocking operation)
+                0x000A => {
+                    if self.key_pressed {
+                        // wait for release
+                        if self.key[self.v[x] as usize] {
+                            self.pc -= 2;
+                        } else {
+                            self.key_pressed = false;
+                        }
+                    } else {
+                        for i in 0..16 {
+                            if self.key[i] {
+                                self.v[x] = i as u8;
+                                self.key_pressed = true;
+                                break;
+                            }
+                        }
+                        self.pc -= 2;
+                    }
+                }
 
                 // 0xFX1E: Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
                 0x001E => {
