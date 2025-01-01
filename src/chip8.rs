@@ -139,9 +139,18 @@ impl Chip {
             // 0x8XYN: bit and math operations
             0x8000 => match opcode & 0x000F {
                 0x0 => self.v[x] = self.v[y],
-                0x1 => self.v[x] |= self.v[y],
-                0x2 => self.v[x] &= self.v[y],
-                0x3 => self.v[x] ^= self.v[y],
+                0x1 => {
+                    self.v[x] |= self.v[y];
+                    self.v[0xF] = 0
+                }
+                0x2 => {
+                    self.v[x] &= self.v[y];
+                    self.v[0xF] = 0
+                }
+                0x3 => {
+                    self.v[x] ^= self.v[y];
+                    self.v[0xF] = 0
+                }
                 0x4 => {
                     let cf = if (self.v[x] as u16) + (self.v[y] as u16) > 0xFF {
                         1
