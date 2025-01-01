@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 ctrlc = "3.4.5"
+rand = "0.8.5"
 sdl2 = "0.37.0"

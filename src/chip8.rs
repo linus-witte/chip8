@@ -196,6 +196,9 @@ impl Chip {
             // 0xBNNN: Jumps to the address NNN plus V0.
             0xB000 => self.pc = (opcode & 0x0FFF) + self.v[0] as u16,
 
+            // 0xCXNN: Sets VX to the result of a bitwise and operation on a random number and NN.
+            0xC000 => self.v[x] = rand::random::<u8>() & nn,
+
             // 0xDXYN: Draws a sprite at coordinates (VX, VY) with height N pixels.
             0xD000 => self.draw(&opcode),
 
