@@ -50,6 +50,8 @@ impl Chip {
 
     /// Emulates a single cycle of the Chip-8 interpreter by fetching, decoding, and executing an opcode.
     pub fn emulate_cycle(&mut self) {
+        self.v[0xF] = 0;
+
         let opcode = self.fetch_opcode();
 
         if opcode == 0x00E0 {
@@ -98,5 +100,9 @@ impl Chip {
                 }
             }
         }
+    }
+
+    pub fn draw_flag(&self) -> bool {
+        self.v[0xF] == 1
     }
 }
