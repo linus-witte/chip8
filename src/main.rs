@@ -4,6 +4,8 @@ mod display;
 use display::Display;
 mod keypad;
 use keypad::Keypad;
+mod audio_driver;
+use audio_driver::AudioDriver;
 
 use std::fs::File;
 use std::io::Read;
@@ -22,6 +24,7 @@ fn main() -> Result<(), String> {
     let sdl_context = sdl2::init().unwrap();
     let mut display = Display::init(&sdl_context)?;
     let mut keypad = Keypad::new(&sdl_context)?;
+    let audio_driver = AudioDriver::new(&sdl_context)?;
 
     ctrlc::set_handler(move || {
         println!("Received termination signal. Shutting down gracefully...");
@@ -42,7 +45,13 @@ fn main() -> Result<(), String> {
             display.draw(&chip.gfx);
         }
 
-        std::thread::sleep(std::time::Duration::from_millis(2));
+        if *chip.sound_timer() > 0 {
+            audio_driver.start();
+        } else {
+            audio_driver.stop();
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
     }
     Ok(())
 }
