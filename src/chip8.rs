@@ -38,6 +38,8 @@ pub struct Chip {
 
     delay_timer: u8,
 
+    sound_timer: u8,
+
     /// only used in 0xFX0A
     key_pressed: bool,
 
@@ -57,6 +59,7 @@ impl Chip {
             sp: 0,
             i: 0,
             delay_timer: 0,
+            sound_timer: 0,
             key: [false; 16],
             key_pressed: false,
             gfx: [false; GFX_SIZE],
@@ -223,6 +226,8 @@ impl Chip {
 
                 0x0015 => self.delay_timer = self.v[x],
 
+                0x0018 => self.sound_timer = self.v[x],
+
                 // 0xFX0A: A key press is awaited, and then stored in VX (blocking operation)
                 0x000A => {
                     if self.key_pressed {
@@ -276,6 +281,9 @@ impl Chip {
         if self.delay_timer > 0 {
             self.delay_timer = self.delay_timer - 1;
         }
+        if self.sound_timer > 0 {
+            self.sound_timer = self.sound_timer - 1;
+        }
     }
 
     fn draw(&mut self, opcode: &u16) {
@@ -302,6 +310,10 @@ impl Chip {
                 }
             }
         }
+    }
+
+    pub fn sound_timer(&self) -> &u8 {
+        return &self.sound_timer;
     }
 
     pub fn draw_flag(&self) -> bool {
