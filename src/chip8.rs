@@ -253,6 +253,10 @@ impl Chip {
                 0x001E => {
                     self.i = self.i.wrapping_add(self.v[x] as u16);
                 }
+                // 0xFX29: Sets I to the location of the sprite for the character in VX. Characters 0-F (in hexadecimal) are represented by a 4x5 font.
+                0x0029 => {
+                    self.i = self.v[x] as u16 * 0x5;
+                }
                 // 0xFX33: Stores the binary-coded decimal representation of VX, with the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2
                 0x0033 => {
                     self.ram[self.i as usize] = self.v[x] / 100;
